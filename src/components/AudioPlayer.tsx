@@ -268,25 +268,7 @@ export default function AudioPlayer() {
         ))}
       </div>
 
-      {/* Helpful instruction for adding the customized track */}
-      {fallbackLoad && (
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-4 p-3 bg-amber-50/70 border border-amber-200/60 rounded-xl text-[11px] sm:text-xs text-amber-800 leading-relaxed font-sans"
-        >
-          <div className="font-semibold mb-1 flex items-center gap-1.5 text-amber-900">
-            <span>🎵</span> <span>Инструкция по загрузке трека</span>
-          </div>
-          Файл песни <code className="bg-amber-100/80 px-1 py-0.5 rounded text-amber-900 font-mono text-[10.5px]">antoha_mc_cvetochki.mp3</code> не найден в репозитории. 
-          Сейчас <strong className="text-amber-900">играет фоновая мелодия</strong>. Чтобы заиграл оригинальный трек Антохи МС:
-          <ol className="list-decimal list-inside mt-1.5 space-y-1 text-amber-800">
-            <li>Создайте в корне вашего репозитория на GitHub папку под названием <code className="bg-amber-100/80 px-1 rounded font-mono text-[10.5px]">public</code></li>
-            <li>Загрузите туда файл вашей песни и переименуйте его ровно в: <code className="bg-amber-100/80 px-1 py-0.5 rounded text-amber-900 font-semibold font-mono text-[10.5px]">antoha_mc_cvetochki.mp3</code></li>
-            <li>Сделайте коммит изменений — GitHub Pages пересоберет сайт с вашей песней!</li>
-          </ol>
-        </motion.div>
-      )}
+      
     </div>
   );
 }
