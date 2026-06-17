@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Standard global ID validator
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Helper for input data
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // Validate a guest's RSVP input structure and size limits
+    function isValidRsvp(data) {
+      return data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && data.attending is bool
+        && (!('guestsCount' in data) || (data.guestsCount is int && data.guestsCount >= 0 && data.guestsCount <= 10))
+        && (!('drinks' in data) || (data.drinks is list && data.drinks.size() <= 10))
+        && (!('dietary' in data) || (data.dietary is string && data.dietary.size() <= 300))
+        && (!('transport' in data) || (data.transport is bool))
+        && data.createdAt == request.time;
+    }
+
+    // Validate a guestbook entry structure and size limits
+    function isValidWish(data) {
+      return data.author is string && data.author.size() >= 1 && data.author.size() <= 100
+        && data.message is string && data.message.size() >= 1 && data.message.size() <= 1000
+        && (!('colorKey' in data) || (data.colorKey is string && data.colorKey.size() <= 50))
+        && data.createdAt == request.time;
+    }
+
+    // RSVPs collection rules
+    match /rsvps/{rsvpId} {
+      // Allow guests to submit RSVPs (write-only for security)
+      allow create: if isValidId(rsvpId) && isValidRsvp(incoming());
+      // RSVPs are sensitive; standard users cannot view, edit, or delete them
+      allow read, update, delete: if false;
+    }
+
+    // Wishes collection rules (Guestbook)
+    match /wishes/{wishId} {
+      // Everyone is allowed to see the happy congratulatory cards
+      allow read: if true;
+      // Anyone can post a supportive message for the couple
+      allow create: if isValidId(wishId) && isValidWish(incoming());
+      // No standard guest should be allowed to modify or delete wishes
+      allow update, delete: if false;
+    }
+  }
+}
