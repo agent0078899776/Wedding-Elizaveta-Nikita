@@ -39,6 +39,7 @@ export default function AudioPlayer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.5);
   const [isMuted, setIsMuted] = useState(false);
+  const [fallbackLoad, setFallbackLoad] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressRef = useRef<HTMLDivElement | null>(null);
@@ -56,6 +57,7 @@ export default function AudioPlayer() {
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    setFallbackLoad(null);
   }, [trackIndex]);
 
   const handlePlayPause = () => {
@@ -82,6 +84,27 @@ export default function AudioPlayer() {
     if (!audioRef.current) return;
     setDuration(audioRef.current.duration);
   };
+
+  const handleAudioError = () => {
+    // If the custom mp3 failed to load, fallback to a working public track so the player still plays
+    if (activeTrack.url.includes("antoha_mc_cvetochki.mp3") && !fallbackLoad) {
+      console.log("Custom mp3 'antoha_mc_cvetochki.mp3' not found. Falling back to default backup audio.");
+      setFallbackLoad("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3");
+    }
+  };
+
+  // Automatically trigger play if it was already playing and we fell back
+  useEffect(() => {
+    if (fallbackLoad && audioRef.current) {
+      // Force reload the new audio source
+      audioRef.current.load();
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => {
+        console.log("Auto-play fallback failed or deferred:", err);
+      });
+    }
+  }, [fallbackLoad]);
 
   const handleTrackEnd = () => {
     handleNext();
@@ -120,10 +143,11 @@ export default function AudioPlayer() {
     <div className="flex flex-col p-6 bg-white border border-editorial-border/80 rounded-2xl shadow-sm max-w-lg mx-auto w-full" id="audio-player-container">
       <audio
         ref={audioRef}
-        src={activeTrack.url}
+        src={fallbackLoad || activeTrack.url}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleTrackEnd}
+        onError={handleAudioError}
       />
 
       <div className="flex items-center gap-5">
@@ -228,25 +252,41 @@ export default function AudioPlayer() {
       </div>
 
       {/* Atmospheric Notes Indicator */}
-      <AnimatePresence>
-        {isPlaying && (
-          <div className="flex justify-center mt-2.5 gap-1.5">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ height: [12, 28, 8, 22, 12] }}
-                transition={{
-                  repeat: Infinity,
-                  duration: 1 + (i * 0.15),
-                  ease: "easeInOut",
-                  repeatType: "reverse"
-                }}
-                className="w-1 bg-editorial-accent/60 rounded-full"
-              ></motion.div>
-            ))}
+      <div className="flex justify-center items-center h-8 mt-2.5 gap-1.5" id="audio-wave-bars">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <motion.div
+            key={i}
+            animate={isPlaying ? { height: [12, 28, 8, 22, 12] } : { height: 6 }}
+            transition={isPlaying ? {
+              repeat: Infinity,
+              duration: 1 + (i * 0.15),
+              ease: "easeInOut",
+              repeatType: "reverse"
+            } : { duration: 0.3 }}
+            className="w-1 bg-editorial-accent/60 rounded-full"
+          ></motion.div>
+        ))}
+      </div>
+
+      {/* Helpful instruction for adding the customized track */}
+      {fallbackLoad && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 p-3 bg-amber-50/70 border border-amber-200/60 rounded-xl text-[11px] sm:text-xs text-amber-800 leading-relaxed font-sans"
+        >
+          <div className="font-semibold mb-1 flex items-center gap-1.5 text-amber-900">
+            <span>🎵</span> <span>Инструкция по загрузке трека</span>
           </div>
-        )}
-      </AnimatePresence>
+          Файл песни <code className="bg-amber-100/80 px-1 py-0.5 rounded text-amber-900 font-mono text-[10.5px]">antoha_mc_cvetochki.mp3</code> не найден в репозитории. 
+          Сейчас <strong className="text-amber-900">играет фоновая мелодия</strong>. Чтобы заиграл оригинальный трек Антохи МС:
+          <ol className="list-decimal list-inside mt-1.5 space-y-1 text-amber-800">
+            <li>Создайте в корне вашего репозитория на GitHub папку под названием <code className="bg-amber-100/80 px-1 rounded font-mono text-[10.5px]">public</code></li>
+            <li>Загрузите туда файл вашей песни и переименуйте его ровно в: <code className="bg-amber-100/80 px-1 py-0.5 rounded text-amber-900 font-semibold font-mono text-[10.5px]">antoha_mc_cvetochki.mp3</code></li>
+            <li>Сделайте коммит изменений — GitHub Pages пересоберет сайт с вашей песней!</li>
+          </ol>
+        </motion.div>
+      )}
     </div>
   );
 }
