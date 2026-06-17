@@ -17,7 +17,8 @@ const PLAYLIST: Track[] = [
   {
     title: "Цветочки",
     artist: "Антоха MC",
-    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
+    // Ссылка на локальный MP3 файл, который пользователь может загрузить в папку public
+    url: `${import.meta.env.BASE_URL}antoha_mc_cvetochki.mp3`
   },
   {
     title: "Невский Вальс (Piano Cover)",
